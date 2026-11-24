@@ -1,0 +1,15 @@
+# Go build and test output
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work.sum
+/bin/
+/build/
+/dist/
+
+# IDE
+/.idea/
