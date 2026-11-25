@@ -126,7 +126,7 @@ Current tool-calling code review:
 Latest review update: the request/response structs preserve the tool call's `type` and nested function `index`, and role `"tool"` messages include `tool_name`. A focused JSON round-trip test covers these fields; `go test ./...` passes. End-to-end tool-call behavior against Ollama still needs user verification.
 
 Next planned improvements:
-- Split the implementation into focused files in the existing `main` package: `main.go`, `ollama.go`, `kubernetes.go`, `tools.go`, and corresponding test files.
+- The code is split into packages: `main.go` delegates to `internal/app`; Kubernetes queries live in `internal/k8s`; Ollama client and protocol types live in `internal/ollama`; `internal/tools` owns tool definitions and allowlisted dispatch. Package boundaries require exported identifiers for cross-package calls and imports based on the `module` path in `go.mod`.
 - Add another read-only Kubernetes tool, starting with namespace-scoped deployment listing.
 - Refactor tool dispatch so Ollama-requested tools execute concurrently with goroutines.
 - Preserve tool-call order and avoid concurrent writes to the shared request/messages state.
@@ -135,6 +135,6 @@ Next planned improvements:
 
 ## Session handoff
 
-Latest status: the pod-listing flow, Ollama chat integration, and native tool-call round trip are implemented. Tool-call protocol fields for `type`, nested function `index`, and `tool_name` are modeled. JSON round-trip tests pass with `go test ./...`. Before the next implementation step, the code should be organized into multiple files, then a second Kubernetes tool should be added before concurrent tool dispatch.
+Latest status: the pod-listing flow, Ollama chat integration, and native tool-call round trip are implemented. Tool-call protocol fields for `type`, nested function `index`, and `tool_name` are modeled. `internal/tools` now owns the model-visible tool definition and dispatches the allowlisted `list_pods` call; `main.go` calls the exported `app.Run`. Next, add a second read-only Kubernetes tool, then implement concurrent dispatch while preserving tool-call order.
 
 Start from the current state above. The Podman-backed kind cluster `k8s-assistant` is running and kubectl context is configured. Continue in small, focused coding tasks: user wants to implement code and receive review, not get full solutions upfront. Explain Go through Java/Spring comparisons, mention idioms and good practices, and give terminal commands for the user to run rather than running them. Don't assume Ollama model download has completed.

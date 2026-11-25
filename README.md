@@ -66,8 +66,8 @@ The Kubernetes Go client dependency (`k8s.io/client-go`) has been added. The CLI
 
 The local Ollama chat API was verified with `curl` at `http://localhost:11434/api/chat`. The CLI defines a read-only `list_pods` tool and handles a tool-call response by fetching pod data and sending the result back to Ollama. The assistant tool-call type and function index are preserved in the follow-up request, and the tool result includes its `tool_name`. No cloud API key is needed for this local model.
 
-Planned code organization: keep the project as one Go package for now and split responsibilities into `main.go`, `ollama.go`, `kubernetes.go`, `tools.go`, and focused test files. Add separate packages only after the application has grown enough to justify those boundaries.
+The project is organized into Go packages: `main.go` is the CLI entry point; `internal/app` coordinates the application flow; `internal/k8s` contains Kubernetes queries; `internal/ollama` contains Ollama API code and protocol types; and `internal/tools` defines the model-visible tools and dispatches allowlisted calls.
 
-Next implementation direction: add another read-only Kubernetes tool, then dispatch multiple requested tools concurrently with goroutines. Each goroutine will return a result to a pre-sized, index-matched slice; the main flow will wait for all results and append them to the Ollama conversation in tool-call order.
+Next implementation direction: add another read-only Kubernetes tool, then dispatch multiple requested tools concurrently with goroutines. Each goroutine should return a result to a pre-sized, index-matched slice; the main flow should wait for all results and append them to the Ollama conversation in tool-call order.
 
 See [PROJECT_SUMMARY.md](PROJECT_SUMMARY.md) for the decisions, roadmap, and a handoff summary for future work sessions.
