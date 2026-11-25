@@ -123,17 +123,17 @@ Current tool-calling code review:
 - `SYSTEM_PROMPT` hardcodes namespace `default`, conflicting with `-namespace`; remove that claim or make it dynamic. Unknown tool names now return an error.
 - Next: fix the JSON/schema round-trip fields and tool-name association, make the namespace instruction accurate, then test one question that should invoke `list_pods` and one that should not. Verify unknown tool names fail safely. Handling multiple tool-call rounds can follow later.
 
-Latest review update: the request/response structs preserve the tool call's `type` and nested function `index`, and role `"tool"` messages include `tool_name`. A focused JSON round-trip test covers these fields; `go test ./...` passes. End-to-end tool-call behavior against Ollama still needs user verification.
+Latest review update: the request/response structs preserve the tool call's `type` and nested function `index`, and role `"tool"` messages include `tool_name`. `internal/app.Run` now repeats the tool-call round trip while the latest Ollama response contains tool calls. Calls within each round are executed sequentially. The loop currently has no maximum-round guard and creates a new Kubernetes client on each round. End-to-end behavior against Ollama still needs user verification.
 
 Next planned improvements:
 - Restore focused tests for input validation, Kubernetes query mapping, tool dispatch, and Ollama message serialization.
 - Complete deployment summaries by populating conditions and representing selectors including match expressions.
 - Refactor Ollama HTTP requests to honor cancellation and enforce a timeout.
-- Support additional tool-call rounds if Ollama requests more tools after receiving results.
+- Reuse one Kubernetes client across tool-call rounds and consider a maximum-round limit to prevent unbounded loops.
 - Execute multiple requested tools concurrently, then append results in their original tool-call order without concurrent writes to the conversation.
 
 ## Session handoff
 
-Latest status: the CLI is split across `internal/app`, `internal/k8s`, `internal/ollama`, and `internal/tools`. Ollama can request the read-only `list_pods` and `list_deployments` tools; `internal/tools` dispatches only those allowlisted names and returns JSON-encoded Kubernetes data. `internal/k8s.Client` is initialized once per tool-call round and reused by `GetPods` and `GetDeployments`. `DeploymentInfo` has JSON tags, but its conditions are not yet populated and its selector currently contains only `MatchLabels`. Tool calls are still sequential and handled in one round. The current checkout has no test files; restore focused tests before relying on `go test ./...` for behavior coverage.
+Latest status: the CLI is split across `internal/app`, `internal/k8s`, `internal/ollama`, and `internal/tools`. Ollama can request the read-only `list_pods` and `list_deployments` tools; `internal/tools` dispatches only those allowlisted names and returns JSON-encoded Kubernetes data. `internal/app.Run` now supports multiple tool-call rounds, with calls in each round executed sequentially. It currently creates a new `internal/k8s.Client` for each round and has no maximum-round guard. `DeploymentInfo` has JSON tags, but its conditions are not yet populated and its selector currently contains only `MatchLabels`. The current checkout has no test files; restore focused tests before relying on `go test ./...` for behavior coverage.
 
 Start from the current state above. The Podman-backed kind cluster `k8s-assistant` is running and kubectl context is configured. Continue in small, focused coding tasks: user wants to implement code and receive review, not get full solutions upfront. Explain Go through Java/Spring comparisons, mention idioms and good practices, and give terminal commands for the user to run rather than running them. Don't assume Ollama model download has completed.
