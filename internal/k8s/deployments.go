@@ -43,16 +43,16 @@ func getContainerImages(containers []corev1.Container) []string {
 }
 
 type DeploymentInfo struct {
-	Name                string
-	Namespace           string
-	DesiredReplicas     *int32
-	ReadyReplicas       int32
-	AvailableReplicas   int32
-	UpdatedReplicas     int32
-	UnavailableReplicas int32
-	ContainerImages     []string
-	Labels              map[string]string
-	Selector            map[string]string
-	Strategy            string
-	Conditions          []string
+	Name                string            `json:"name"`
+	Namespace           string            `json:"namespace"`
+	DesiredReplicas     *int32            `json:"desiredReplicas"`
+	ReadyReplicas       int32             `json:"readyReplicas"`
+	AvailableReplicas   int32             `json:"availableReplicas"`
+	UpdatedReplicas     int32             `json:"updatedReplicas"`
+	UnavailableReplicas int32             `json:"unavailableReplicas"`
+	ContainerImages     []string          `json:"containerImages"`
+	Labels              map[string]string `json:"labels"`
+	Selector            map[string]string `json:"selector"`
+	Strategy            string            `json:"strategy"`
+	Conditions          []string          `json:"conditions"`
 }
