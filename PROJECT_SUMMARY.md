@@ -135,6 +135,6 @@ Next planned improvements:
 
 ## Session handoff
 
-Latest status: the pod-listing flow, Ollama chat integration, and native tool-call round trip are implemented. Tool-call protocol fields for `type`, nested function `index`, and `tool_name` are modeled. `internal/tools` now owns the model-visible tool definition and dispatches the allowlisted `list_pods` call; `main.go` calls the exported `app.Run`. Next, add a second read-only Kubernetes tool, then implement concurrent dispatch while preserving tool-call order.
+Latest status: the pod-listing flow, Ollama chat integration, and native tool-call round trip are implemented. Tool-call protocol fields for `type`, nested function `index`, and `tool_name` are modeled. `internal/tools` owns the model-visible tool definition and dispatches the allowlisted `list_pods` call. `internal/k8s.Client` is initialized once per tool-call round and reused by `GetPods`; add future Kubernetes methods such as `GetDeployments` to that same receiver. Next, complete the deployment tool, then implement concurrent dispatch while preserving tool-call order.
 
 Start from the current state above. The Podman-backed kind cluster `k8s-assistant` is running and kubectl context is configured. Continue in small, focused coding tasks: user wants to implement code and receive review, not get full solutions upfront. Explain Go through Java/Spring comparisons, mention idioms and good practices, and give terminal commands for the user to run rather than running them. Don't assume Ollama model download has completed.

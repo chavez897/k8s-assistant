@@ -27,10 +27,10 @@ func Definitions() []ollama.Tools {
 }
 
 // Dispatch executes an allowlisted tool call and returns its Ollama tool message.
-func Dispatch(ctx context.Context, namespace string, call ollama.OllamaToolCall) (ollama.OllamaMessage, error) {
+func Dispatch(ctx context.Context, client *k8s.Client, namespace string, call ollama.OllamaToolCall) (ollama.OllamaMessage, error) {
 	switch call.Function.Name {
 	case "list_pods":
-		pods, err := k8s.GetK8sPods(ctx, namespace)
+		pods, err := client.GetPods(ctx, namespace)
 		if err != nil {
 			return ollama.OllamaMessage{}, fmt.Errorf("could not get Kubernetes pods: %w", err)
 		}

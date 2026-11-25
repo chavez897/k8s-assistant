@@ -5,24 +5,11 @@ import (
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
-func GetK8sPods(ctx context.Context, namespace string) ([]PodInfo, error) {
+func (c *Client) GetPods(ctx context.Context, namespace string) ([]PodInfo, error) {
 	fmt.Printf("Fetching pods in namespace: %s\n", namespace)
-	config, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
-		clientcmd.NewDefaultClientConfigLoadingRules(),
-		&clientcmd.ConfigOverrides{},
-	).ClientConfig()
-	if err != nil {
-		return nil, fmt.Errorf("could not get Kubernetes config: %w", err)
-	}
-	clientSet, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return nil, fmt.Errorf("could not create Kubernetes client: %w", err)
-	}
-	pods, err := clientSet.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{})
+	pods, err := c.clientset.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("could not list Kubernetes pods: %w", err)
 	}

@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"strings"
 
+	"k8s-assistant/internal/k8s"
 	"k8s-assistant/internal/ollama"
 	"k8s-assistant/internal/tools"
 )
@@ -37,9 +38,13 @@ func Run() error {
 		return fmt.Errorf("could not send Ollama request: %w", err)
 	}
 	if len(response.Message.ToolCalls) > 0 {
+		k8sClient, err := k8s.NewClient()
+		if err != nil {
+			return fmt.Errorf("could not create Kubernetes client: %w", err)
+		}
 		request.Messages = append(request.Messages, response.Message)
 		for _, toolCall := range response.Message.ToolCalls {
-			toolMessage, err := tools.Dispatch(ctx, k8sNamespace, toolCall)
+			toolMessage, err := tools.Dispatch(ctx, k8sClient, k8sNamespace, toolCall)
 			if err != nil {
 				return fmt.Errorf("could not execute tool %q: %w", toolCall.Function.Name, err)
 			}
