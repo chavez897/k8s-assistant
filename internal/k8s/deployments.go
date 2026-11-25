@@ -8,11 +8,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (c *Client) GetDeployments(ctx context.Context, namespace string) []DeploymentInfo {
+func (c *Client) GetDeployments(ctx context.Context, namespace string) ([]DeploymentInfo, error) {
 	fmt.Printf("Fetching deployments in namespace: %s\n", namespace)
 	deployments, err := c.clientSet.AppsV1().Deployments(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
-		fmt.Errorf("could not list Kubernetes deployments: %w", err)
+		return nil, fmt.Errorf("could not list Kubernetes deployments: %w", err)
 	}
 	var deploymentInfos []DeploymentInfo
 	for _, deployment := range deployments.Items {
@@ -31,8 +31,7 @@ func (c *Client) GetDeployments(ctx context.Context, namespace string) []Deploym
 		}
 		deploymentInfos = append(deploymentInfos, deploymentInfo)
 	}
-	fmt.Printf("Deployments %+v\n", deploymentInfos)
-	return deploymentInfos
+	return deploymentInfos, nil
 }
 
 func getContainerImages(containers []corev1.Container) []string {
