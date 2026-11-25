@@ -16,7 +16,6 @@ const (
 	ToolNameListDeployments ToolName = "list_deployments"
 )
 
-// Definitions returns the tools exposed to the Ollama model.
 func Definitions() []ollama.Tools {
 	return []ollama.Tools{
 		{
@@ -46,7 +45,6 @@ func Definitions() []ollama.Tools {
 	}
 }
 
-// Dispatch executes an allowlisted tool call and returns its Ollama tool message.
 func Dispatch(ctx context.Context, client *k8s.Client, namespace string, call ollama.OllamaToolCall) (ollama.OllamaMessage, error) {
 	switch call.Function.Name {
 	case string(ToolNameListPods):
