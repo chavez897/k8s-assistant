@@ -9,7 +9,7 @@ import (
 
 func (c *Client) GetPods(ctx context.Context, namespace string) ([]PodInfo, error) {
 	fmt.Printf("Fetching pods in namespace: %s\n", namespace)
-	pods, err := c.clientset.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{})
+	pods, err := c.clientSet.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("could not list Kubernetes pods: %w", err)
 	}
