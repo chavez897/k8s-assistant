@@ -126,15 +126,14 @@ Current tool-calling code review:
 Latest review update: the request/response structs preserve the tool call's `type` and nested function `index`, and role `"tool"` messages include `tool_name`. A focused JSON round-trip test covers these fields; `go test ./...` passes. End-to-end tool-call behavior against Ollama still needs user verification.
 
 Next planned improvements:
-- The code is split into packages: `main.go` delegates to `internal/app`; Kubernetes queries live in `internal/k8s`; Ollama client and protocol types live in `internal/ollama`; `internal/tools` owns tool definitions and allowlisted dispatch. Package boundaries require exported identifiers for cross-package calls and imports based on the `module` path in `go.mod`.
-- Add another read-only Kubernetes tool, starting with namespace-scoped deployment listing.
-- Refactor tool dispatch so Ollama-requested tools execute concurrently with goroutines.
-- Preserve tool-call order and avoid concurrent writes to the shared request/messages state.
-- Improve Ollama HTTP cancellation and add a timeout once the tool flow is stable.
-- Send pod/deployment data to the model as JSON rather than formatted Go struct strings.
+- Restore focused tests for input validation, Kubernetes query mapping, tool dispatch, and Ollama message serialization.
+- Complete deployment summaries by populating conditions and representing selectors including match expressions.
+- Refactor Ollama HTTP requests to honor cancellation and enforce a timeout.
+- Support additional tool-call rounds if Ollama requests more tools after receiving results.
+- Execute multiple requested tools concurrently, then append results in their original tool-call order without concurrent writes to the conversation.
 
 ## Session handoff
 
-Latest status: the pod-listing flow, Ollama chat integration, and native tool-call round trip are implemented. Tool-call protocol fields for `type`, nested function `index`, and `tool_name` are modeled. `internal/tools` owns the model-visible tool definition and dispatches the allowlisted `list_pods` call. `internal/k8s.Client` is initialized once per tool-call round and reused by `GetPods`; add future Kubernetes methods such as `GetDeployments` to that same receiver. Next, complete the deployment tool, then implement concurrent dispatch while preserving tool-call order.
+Latest status: the CLI is split across `internal/app`, `internal/k8s`, `internal/ollama`, and `internal/tools`. Ollama can request the read-only `list_pods` and `list_deployments` tools; `internal/tools` dispatches only those allowlisted names and returns JSON-encoded Kubernetes data. `internal/k8s.Client` is initialized once per tool-call round and reused by `GetPods` and `GetDeployments`. `DeploymentInfo` has JSON tags, but its conditions are not yet populated and its selector currently contains only `MatchLabels`. Tool calls are still sequential and handled in one round. The current checkout has no test files; restore focused tests before relying on `go test ./...` for behavior coverage.
 
 Start from the current state above. The Podman-backed kind cluster `k8s-assistant` is running and kubectl context is configured. Continue in small, focused coding tasks: user wants to implement code and receive review, not get full solutions upfront. Explain Go through Java/Spring comparisons, mention idioms and good practices, and give terminal commands for the user to run rather than running them. Don't assume Ollama model download has completed.

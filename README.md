@@ -54,20 +54,18 @@ The optional `-namespace` flag defaults to `default`. Quote the question so the 
 
 ## Current status
 
-The Go module is named `k8s-assistant`. The CLI accepts an optional namespace flag and validates/trims the namespace and question through a helper that returns errors. Process-level reporting and exit handling stay in `main`. The table-driven test in `main_test.go` passes with `go test`.
+The Go module is named `k8s-assistant`. The CLI accepts an optional namespace flag, validates the namespace and question, and delegates application flow to `internal/app`. `main.go` reports errors and exits with a non-zero status.
 
 ## Local Kubernetes development
 
-The local development cluster is kind, using Podman as its container provider. Podman 6.1.4, kind v0.33.0, and kubectl are available, and the `k8s-assistant` cluster has been created and is running.
+The local development cluster is kind, using Podman as its container provider. The `k8s-assistant` cluster and kubectl context are configured locally.
 
-The user's kubectl context is configured for the local cluster. The next implementation step is adding the Kubernetes Go client and using it to list pods in the selected namespace.
+The Kubernetes Go client dependency (`k8s.io/client-go`) is used through `internal/k8s.Client`. The app creates one client when Ollama requests a tool and reuses it for each call in that tool round. The package can list pod status and deployment replica status in the selected namespace.
 
-The Kubernetes Go client dependency (`k8s.io/client-go`) has been added. The CLI loads the current kubeconfig context and returns pod names, phases, container names, restart counts, and current waiting/termination reasons from the selected namespace; `main` formats the results. Pods with no container statuses are included. The user verified the CLI works against the local cluster. Application logic runs in `run`, and Kubernetes operation errors are wrapped with context.
+The local Ollama chat API was verified with `curl` at `http://localhost:11434/api/chat`. The CLI exposes the read-only `list_pods` and `list_deployments` tools. It dispatches only allowlisted tool names, sends JSON-encoded Kubernetes data back to Ollama, and preserves the tool-call fields and `tool_name` in the follow-up conversation. No cloud API key is needed for this local model.
 
-The local Ollama chat API was verified with `curl` at `http://localhost:11434/api/chat`. The CLI defines a read-only `list_pods` tool and handles a tool-call response by fetching pod data and sending the result back to Ollama. The assistant tool-call type and function index are preserved in the follow-up request, and the tool result includes its `tool_name`. No cloud API key is needed for this local model.
+The project is organized into Go packages: `main.go` is the CLI entry point; `internal/app` coordinates the application flow; `internal/k8s` contains the reusable Kubernetes client and queries; `internal/ollama` contains Ollama API code and protocol types; and `internal/tools` defines and dispatches model-visible tools. Tool calls are currently handled sequentially and in a single round.
 
-The project is organized into Go packages: `main.go` is the CLI entry point; `internal/app` coordinates the application flow; `internal/k8s` contains Kubernetes queries; `internal/ollama` contains Ollama API code and protocol types; and `internal/tools` defines the model-visible tools and dispatches allowlisted calls.
-
-Next implementation direction: add another read-only Kubernetes tool, then dispatch multiple requested tools concurrently with goroutines. Each goroutine should return a result to a pre-sized, index-matched slice; the main flow should wait for all results and append them to the Ollama conversation in tool-call order.
+Next improvements: restore focused tests; populate deployment conditions and represent full selectors (including match expressions); make Ollama HTTP requests cancellable and time-limited; support additional tool-call rounds; then execute multiple requested tools concurrently while preserving their original order in the conversation.
 
 See [PROJECT_SUMMARY.md](PROJECT_SUMMARY.md) for the decisions, roadmap, and a handoff summary for future work sessions.
