@@ -9,7 +9,6 @@ import (
 )
 
 func (c *Client) GetDeployments(ctx context.Context, namespace string) ([]DeploymentInfo, error) {
-	fmt.Printf("Fetching deployments in namespace: %s\n", namespace)
 	deployments, err := c.clientSet.AppsV1().Deployments(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("could not list Kubernetes deployments: %w", err)
