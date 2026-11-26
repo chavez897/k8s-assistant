@@ -37,8 +37,11 @@ func Run() error {
 	if err != nil {
 		return fmt.Errorf("could not send Ollama request: %w", err)
 	}
+	var k8sClient *k8s.Client
+	if len(response.Message.ToolCalls) > 0 {
+		k8sClient, err = k8s.NewClient()
+	}
 	for len(response.Message.ToolCalls) > 0 {
-		k8sClient, err := k8s.NewClient()
 		if err != nil {
 			return fmt.Errorf("could not create Kubernetes client: %w", err)
 		}
