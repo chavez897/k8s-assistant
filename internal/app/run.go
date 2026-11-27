@@ -7,11 +7,14 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 
 	"k8s-assistant/internal/k8s"
 	"k8s-assistant/internal/ollama"
 	"k8s-assistant/internal/tools"
 )
+
+const maxConcurrentToolCalls = 4
 
 func Run() error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
@@ -40,17 +43,53 @@ func Run() error {
 	var k8sClient *k8s.Client
 	if len(response.Message.ToolCalls) > 0 {
 		k8sClient, err = k8s.NewClient()
-	}
-	for len(response.Message.ToolCalls) > 0 {
 		if err != nil {
 			return fmt.Errorf("could not create Kubernetes client: %w", err)
 		}
+	}
+
+	for len(response.Message.ToolCalls) > 0 {
+		toolCalls := response.Message.ToolCalls
+		toolMessages := make([]ollama.OllamaMessage, len(toolCalls))
+		toolErrors := make([]error, len(toolCalls))
 		request.Messages = append(request.Messages, response.Message)
-		for _, toolCall := range response.Message.ToolCalls {
-			toolMessage, err := tools.Dispatch(ctx, k8sClient, k8sNamespace, toolCall)
+		jobs := make(chan toolJob, len(toolCalls))
+		fmt.Printf("Executing %d tool calls...\n", len(toolCalls))
+		for i, toolCall := range toolCalls {
+			jobs <- toolJob{i, toolCall}
+		}
+		close(jobs)
+
+		workerCount := min(maxConcurrentToolCalls, len(toolCalls))
+		var waitGroup sync.WaitGroup
+		waitGroup.Add(workerCount)
+
+		for range workerCount {
+			go func() {
+				defer waitGroup.Done()
+
+				for job := range jobs {
+					toolMessage, err := tools.Dispatch(ctx, k8sClient, k8sNamespace, job.toolCall)
+					if err != nil {
+						toolErrors[job.index] = fmt.Errorf(
+							"could not execute tool %q: %w",
+							job.toolCall.Function.Name,
+							err,
+						)
+						continue
+					}
+					toolMessages[job.index] = toolMessage
+				}
+			}()
+		}
+
+		waitGroup.Wait()
+		for _, err := range toolErrors {
 			if err != nil {
-				return fmt.Errorf("could not execute tool %q: %w", toolCall.Function.Name, err)
+				return err
 			}
+		}
+		for _, toolMessage := range toolMessages {
 			request.Messages = append(request.Messages, toolMessage)
 		}
 		response, err = ollama.SendChatRequest(request)
@@ -68,4 +107,9 @@ func sanitizeInput(input, inputName string) (string, error) {
 		return "", fmt.Errorf("empty %s provided", inputName)
 	}
 	return sanitizedInput, nil
+}
+
+type toolJob struct {
+	index    int
+	toolCall ollama.OllamaToolCall
 }
