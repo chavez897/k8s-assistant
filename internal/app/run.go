@@ -38,7 +38,7 @@ func Run() error {
 }
 
 func agentLoop(ctx context.Context, k8sNamespace string, request ollama.OllamaRequest) (ollama.OllamaResponse, error) {
-	response, err := ollama.SendChatRequest(request)
+	response, err := ollama.SendChatRequest(ctx, request)
 	if err != nil {
 		return ollama.OllamaResponse{}, fmt.Errorf("could not send Ollama request: %w", err)
 	}
@@ -61,7 +61,7 @@ func agentLoop(ctx context.Context, k8sNamespace string, request ollama.OllamaRe
 		for _, toolMessage := range toolMessages {
 			request.Messages = append(request.Messages, toolMessage)
 		}
-		response, err = ollama.SendChatRequest(request)
+		response, err = ollama.SendChatRequest(ctx, request)
 		if err != nil {
 			return ollama.OllamaResponse{}, fmt.Errorf("could not send Ollama request after tool call: %w", err)
 		}

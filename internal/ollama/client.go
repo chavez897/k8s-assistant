@@ -2,6 +2,7 @@ package ollama
 
 import (
 	"bytes"
+	"context"
 	"encoding/json/v2"
 	"fmt"
 	"io"
@@ -15,13 +16,18 @@ const ollamaChatEndpoint = "/api/chat"
 const systemPrompt = `Answer questions about Kubernetes. For current pod information, use the provided tool.
 Do not guess if the tool does not provide enough data.`
 
-func SendChatRequest(request OllamaRequest) (OllamaResponse, error) {
+func SendChatRequest(ctx context.Context, request OllamaRequest) (OllamaResponse, error) {
 	requestBody, err := json.Marshal(request)
 	if err != nil {
 		return OllamaResponse{}, fmt.Errorf("could not marshal request body: %w", err)
 	}
 	requestUrl := ollamaBaseURL + ollamaChatEndpoint
-	resp, err := http.Post(requestUrl, "application/json", bytes.NewBuffer(requestBody))
+	req, err := http.NewRequestWithContext(ctx, "POST", requestUrl, bytes.NewBuffer(requestBody))
+	if err != nil {
+		return OllamaResponse{}, fmt.Errorf("could not create request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return OllamaResponse{}, fmt.Errorf("could not send request: %w", err)
 	}
