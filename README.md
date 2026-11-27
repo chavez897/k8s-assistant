@@ -1,71 +1,60 @@
 # Kubernetes Pod Status Q&A
 
-A beginner-friendly Go project to build a read-only question-and-answer tool for Kubernetes pod status. The app will retrieve pod information from a Kubernetes cluster and use a local Ollama model to explain the results in plain language.
+A read-only Go CLI that answers natural-language questions about Kubernetes pods and deployments. It uses the current kubeconfig context to read data from one namespace and a local Ollama model to explain the results.
 
-## Initial scope
+## What it does
 
-The first capability is answering questions about pod status, for example:
+- Accepts a question and an optional namespace (`default` by default).
+- Sends the question and available read-only tool definitions to Ollama.
+- Lets the model request pod or deployment status through an allowlisted tool registry.
+- Returns concise Kubernetes summaries to Ollama and prints its final answer.
+- Executes up to four tool calls concurrently per response, while preserving their original order in the conversation.
+- Cancels in-flight Ollama HTTP and Kubernetes API requests when interrupted with Ctrl+C.
 
-- Which pods are not running?
-- What is the status of a particular pod?
-- Are any pods restarting?
+The model cannot execute shell commands or modify cluster resources. Keep the local Ollama service private and grant the kubeconfig identity only the read permissions the app needs.
 
-The first version will focus on one namespace at a time. It will report Kubernetes data and explain it; it will not create, update, or delete cluster resources.
+## Requirements
 
-## Planned first version
+- Go 1.27.3 or compatible with the module version in `go.mod`.
+- A reachable Kubernetes cluster and kubeconfig with read access to pods and deployments in the selected namespace.
+- Ollama running locally at `http://localhost:11434`, with the configured model `gemma4:e2b` available.
 
-Initially, this will be a Go command-line application run locally from GoLand. It will:
+The project has been developed with a kind cluster using Podman. Other Kubernetes distributions should work through the current kubeconfig context.
 
-1. Connect to Kubernetes using the user's kubeconfig.
-2. Read pod status in the selected namespace.
-3. Pass only the relevant, concise status data and question to Ollama running locally.
-4. Display the answer, with the underlying pod facts available for verification.
+## Run
 
-The local Kubernetes distribution (such as kind or Minikube), model, and exact command-line interface have not been selected yet.
-
-## Learning approach
-
-Build incrementally, explaining Go concepts as they are introduced. The user is familiar with Java and Spring, so use those as comparisons when they help clarify Go concepts. Give small, focused coding tasks instead of writing the solution immediately; let the user try first and answer specific questions or review their attempt when asked. Reviews should cover not only whether code works, but also idiomatic Go, GoLand/editor conventions, readability, error handling, and relevant good practices at the user's current learning level. For terminal steps, provide the command and explain what it does; the user will run it themselves. Start with a minimal Go program, then add Kubernetes access, and finally connect Ollama. Do not require Kubernetes or AI setup before the basic Go project is working.
-
-## Local Ollama setup
-
-1. Download Ollama for macOS from [ollama.com/download](https://ollama.com/download), install it, and open the Ollama app.
-2. In Terminal, run `ollama run gemma4:e2b`. This downloads the model (about 7.2 GB) the first time and opens a prompt to chat with it. The model needs substantial memory; responses may be slow on less capable hardware.
-3. Type a prompt, press Enter, and use `/bye` to exit.
-
-The Ollama app provides the local API at `http://localhost:11434` while it is running. Local models do not require an API key. Model choice can be revisited depending on available Mac memory and performance.
-
-## Safety and privacy
-
-- Keep Kubernetes access read-only and limited to the resources needed for pod status.
-- Do not let the model execute commands or change cluster resources.
-- Send only the information needed to answer the question; avoid secrets and sensitive data.
-- Keep Ollama local and do not expose it publicly by default.
-
-## Run the current app
-
-From the project directory, provide a question as command-line arguments:
+Start Ollama and ensure the desired Kubernetes context is active, then run from the project directory:
 
 ```sh
 go run . -namespace kube-system "Which pods are restarting?"
 ```
 
-The optional `-namespace` flag defaults to `default`. Quote the question so the shell passes it as one argument and treats punctuation such as `?` literally. The CLI also joins multiple unquoted question arguments with spaces. If no question is supplied, it prints a prompt to stderr and exits with status 1. Kubernetes and Ollama integration will be added in later steps.
+The `-namespace` flag is optional and defaults to `default`. Questions can also be passed as multiple arguments; the CLI joins them with spaces. Quoting the question is recommended, especially when it contains shell punctuation.
 
-## Current status
+Run the package build/tests with:
 
-The Go module is named `k8s-assistant`. The CLI accepts an optional namespace flag, validates the namespace and question, and delegates application flow to `internal/app`. `main.go` reports errors and exits with a non-zero status.
+```sh
+go test ./...
+```
 
-## Local Kubernetes development
+There are currently no test files, so this command verifies compilation but does not yet provide behavioral test coverage.
 
-The local development cluster is kind, using Podman as its container provider. The `k8s-assistant` cluster and kubectl context are configured locally.
+## Project layout
 
-The Kubernetes Go client dependency (`k8s.io/client-go`) is used through `internal/k8s.Client`. The app creates one client when Ollama requests a tool and reuses it for each call in that tool round. The package can list pod status and deployment replica status in the selected namespace.
+- `main.go` — CLI entry point and top-level error reporting.
+- `internal/app` — input handling, Ollama conversation/tool-call loop, and bounded concurrent tool execution.
+- `internal/k8s` — kubeconfig-based client and concise pod/deployment status queries.
+- `internal/ollama` — Ollama HTTP API client and request/response types.
+- `internal/tools` — tool definitions and allowlisted dispatch.
+- `internal/tools/commands` — command interface and individual pod/deployment commands.
 
-The local Ollama chat API was verified with `curl` at `http://localhost:11434/api/chat`. The CLI exposes the read-only `list_pods` and `list_deployments` tools. It dispatches only allowlisted tool names, sends JSON-encoded Kubernetes data back to Ollama, and preserves the tool-call fields and `tool_name` in the follow-up conversation. No cloud API key is needed for this local model.
+Tool definitions and dispatch are built from an ordered command registry. To add a tool, implement the command interface and register the command in `internal/tools`.
 
-The project is organized into Go packages: `main.go` is the CLI entry point; `internal/app` coordinates the application flow; `internal/k8s` contains the reusable Kubernetes client and queries; `internal/ollama` contains Ollama API code and protocol types; and `internal/tools` defines and dispatches model-visible tools. The app now handles repeated tool-call rounds until Ollama returns a response without tool calls. Calls within each round are still executed sequentially.
+## Current limitations
 
-Next improvements: restore focused tests; populate deployment conditions and represent full selectors (including match expressions); make Ollama HTTP requests cancellable and time-limited; reuse the Kubernetes client across tool-call rounds and consider a maximum round limit; then execute multiple requested tools concurrently while preserving their original order in the conversation.
+- Ollama requests are cancellable but do not yet have an explicit timeout.
+- The tool-call conversation loop has no maximum-round limit.
+- Deployment summaries currently include match-label selectors only; selector expressions and deployment conditions are not populated.
+- The test suite needs focused unit tests for input validation, Kubernetes summaries, command dispatch, serialization, and cancellation/concurrency behavior.
 
-See [PROJECT_SUMMARY.md](PROJECT_SUMMARY.md) for the decisions, roadmap, and a handoff summary for future work sessions.
+See [PROJECT_SUMMARY.md](PROJECT_SUMMARY.md) for development decisions, learning preferences, and the current roadmap.
