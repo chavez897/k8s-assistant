@@ -56,5 +56,8 @@ Tool definitions and dispatch are built from an ordered command registry. To add
 - The tool-call conversation loop has no maximum-round limit.
 - Deployment summaries currently include match-label selectors only; selector expressions and deployment conditions are not populated.
 - The test suite needs focused unit tests for input validation, Kubernetes summaries, command dispatch, serialization, and cancellation/concurrency behavior.
+- End-to-end verification is still needed for multi-tool rounds and cancellation while Ollama or Kubernetes requests are in flight.
+
+Before expanding the tool set, prioritize those reliability items: focused behavioral tests, an explicit Ollama timeout, a maximum tool-call-round limit, and end-to-end checks for concurrency and cancellation. Once these are covered, new tools can be added through the command registry.
 
 See [PROJECT_SUMMARY.md](PROJECT_SUMMARY.md) for development decisions, learning preferences, and the current roadmap.
