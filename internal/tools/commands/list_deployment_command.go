@@ -29,10 +29,10 @@ func (ListDeploymentsCommand) Definition() ollama.Tools {
 	}
 }
 
-func (ListDeploymentsCommand) Execute(ctx context.Context, client *k8s.Client, namespace string) (ollama.OllamaMessage, error) {
+func (ListDeploymentsCommand) Execute(ctx context.Context, client *k8s.Client, namespace, toolCallId string) (ollama.OllamaMessage, error) {
 	deployments, err := client.GetDeployments(ctx, namespace)
 	if err != nil {
 		return ollama.OllamaMessage{}, fmt.Errorf("could not get Kubernetes deployments: %w", err)
 	}
-	return newToolMessage(namespace, "deployments", ToolNameListDeployments, deployments)
+	return newToolMessage(namespace, "deployments", toolCallId, ToolNameListDeployments, deployments)
 }

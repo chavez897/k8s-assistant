@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"encoding/json/v2"
 	"flag"
 	"fmt"
 	"os"
@@ -61,6 +62,8 @@ func agentLoop(ctx context.Context, k8sNamespace string, request ollama.OllamaRe
 		for _, toolMessage := range toolMessages {
 			request.Messages = append(request.Messages, toolMessage)
 		}
+		log, _ := json.Marshal(request)
+		fmt.Printf("%s", log)
 		response, err = ollama.SendChatRequest(ctx, request)
 		if err != nil {
 			return ollama.OllamaResponse{}, fmt.Errorf("could not send Ollama request after tool call: %w", err)

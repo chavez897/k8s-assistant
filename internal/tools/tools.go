@@ -26,7 +26,7 @@ func Definitions() []ollama.Tools {
 func Dispatch(ctx context.Context, client *k8s.Client, namespace string, call ollama.OllamaToolCall) (ollama.OllamaMessage, error) {
 	for _, command := range commandRegistry {
 		if command.Name() == commands.ToolName(call.Function.Name) {
-			return command.Execute(ctx, client, namespace)
+			return command.Execute(ctx, client, namespace, call.Id)
 		}
 	}
 	return ollama.OllamaMessage{}, fmt.Errorf("unknown tool call: %s", call.Function.Name)

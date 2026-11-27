@@ -3,10 +3,11 @@ package ollama
 import "time"
 
 type OllamaMessage struct {
-	Role      string           `json:"role"`
-	Content   string           `json:"content"`
-	ToolCalls []OllamaToolCall `json:"tool_calls"`
-	ToolName  string           `json:"tool_name,omitempty"`
+	Role       string           `json:"role"`
+	Content    string           `json:"content"`
+	ToolCalls  []OllamaToolCall `json:"tool_calls"`
+	ToolName   string           `json:"tool_name,omitempty"`
+	ToolCallId string           `json:"tool_call_id,omitempty"`
 }
 type OllamaRequest struct {
 	Model    string          `json:"model"`

@@ -17,5 +17,5 @@ const (
 type Command interface {
 	Name() ToolName
 	Definition() ollama.Tools
-	Execute(ctx context.Context, client *k8s.Client, namespace string) (ollama.OllamaMessage, error)
+	Execute(ctx context.Context, client *k8s.Client, namespace, toolCallId string) (ollama.OllamaMessage, error)
 }
