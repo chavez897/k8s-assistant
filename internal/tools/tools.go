@@ -13,6 +13,7 @@ import (
 var commandRegistry = []commands.Command{
 	commands.ListPodsCommand{},
 	commands.ListDeploymentsCommand{},
+	commands.CreateDeploymentCommand{},
 }
 
 func Definitions() []ollama.Tools {
@@ -23,11 +24,11 @@ func Definitions() []ollama.Tools {
 	return definitions
 }
 
-func Dispatch(ctx context.Context, client *k8s.Client, namespace string, call ollama.OllamaToolCall) (ollama.OllamaMessage, error) {
+func Dispatch(ctx context.Context, client *k8s.Client, namespace string, toolCall ollama.OllamaToolCall) (ollama.OllamaMessage, error) {
 	for _, command := range commandRegistry {
-		if command.Name() == commands.ToolName(call.Function.Name) {
-			return command.Execute(ctx, client, namespace, call.Id)
+		if command.Name() == commands.ToolName(toolCall.Function.Name) {
+			return command.Execute(ctx, client, namespace, toolCall)
 		}
 	}
-	return ollama.OllamaMessage{}, fmt.Errorf("unknown tool call: %s", call.Function.Name)
+	return ollama.OllamaMessage{}, fmt.Errorf("unknown tool call: %s", toolCall.Function.Name)
 }

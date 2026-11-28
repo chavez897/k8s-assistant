@@ -29,10 +29,11 @@ func (ListPodsCommand) Definition() ollama.Tools {
 	}
 }
 
-func (ListPodsCommand) Execute(ctx context.Context, client *k8s.Client, namespace, toolCallId string) (ollama.OllamaMessage, error) {
+func (ListPodsCommand) Execute(ctx context.Context, client *k8s.Client, namespace string,
+	toolCall ollama.OllamaToolCall) (ollama.OllamaMessage, error) {
 	pods, err := client.GetPods(ctx, namespace)
 	if err != nil {
 		return ollama.OllamaMessage{}, fmt.Errorf("could not get Kubernetes pods: %w", err)
 	}
-	return newToolMessage(namespace, "pods", toolCallId, ToolNameListPods, pods)
+	return newToolMessage(namespace, "pods", toolCall.Id, ToolNameListPods, pods)
 }

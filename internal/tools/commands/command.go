@@ -10,12 +10,13 @@ import (
 type ToolName string
 
 const (
-	ToolNameListPods        ToolName = "list_pods"
-	ToolNameListDeployments ToolName = "list_deployments"
+	ToolNameListPods         ToolName = "list_pods"
+	ToolNameListDeployments  ToolName = "list_deployments"
+	ToolNameCreateDeployment ToolName = "create_deployment"
 )
 
 type Command interface {
 	Name() ToolName
 	Definition() ollama.Tools
-	Execute(ctx context.Context, client *k8s.Client, namespace, toolCallId string) (ollama.OllamaMessage, error)
+	Execute(ctx context.Context, client *k8s.Client, namespace string, toolCall ollama.OllamaToolCall) (ollama.OllamaMessage, error)
 }
