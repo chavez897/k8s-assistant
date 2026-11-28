@@ -21,7 +21,7 @@ Use this document to continue the project and Go-learning sessions.
 - `internal/app` builds the initial Ollama request and handles repeated tool-call rounds. The Kubernetes client is initialized lazily when the model first requests a tool and reused across rounds.
 - Each round can execute up to four tool calls concurrently using a worker pool. Results are stored by original call index and appended to the Ollama conversation in request order. Tool failures are returned as errors.
 - Ctrl+C cancels the shared context. That context is passed to Ollama HTTP requests and Kubernetes API calls.
-- Ollama is configured with a local base URL and model in `internal/ollama/client.go`. Requests use `http.NewRequestWithContext` and `http.DefaultClient`; there is no explicit HTTP timeout yet.
+- Ollama is configured with a local base URL and model in `internal/ollama/client.go`. Requests use `http.NewRequestWithContext` and a reusable HTTP client with a two-minute timeout per request.
 - `internal/tools` contains an ordered registry used to build tool definitions and dispatch by command name. `internal/tools/commands` defines the command interface and the `list_pods` and `list_deployments` implementations.
 - Tool results are JSON-encoded concise status summaries. Pod summaries include pod name/phase and per-container name, restart count, and waiting/terminated reason when present; pods without container statuses are still represented.
 - Deployment summaries include replica counts, images, labels, match-label selectors, and strategy. Conditions are not populated, and selector match expressions are not represented.
@@ -52,11 +52,9 @@ The namespace flag is optional. The CLI joins multiple question arguments with s
 ## Suggested roadmap
 
 1. Add focused behavioral tests, starting with command definitions/dispatch and tool-message serialization; then cover input validation and Kubernetes summary mapping.
-2. Add a maximum tool-call-round limit to prevent unbounded model/tool loops.
-3. Configure an explicit timeout for Ollama HTTP requests while retaining context cancellation.
-4. Complete deployment summaries by populating conditions and representing selectors including match expressions.
-5. Exercise end-to-end flows with Ollama and a local Kubernetes cluster, including cancellation, unknown tool names, one and multiple tools per round, and tool errors.
-6. After the reliability work is covered, expand the available read-only tools through the command registry.
+2. Complete deployment summaries by populating conditions and representing selectors including match expressions.
+3. Exercise end-to-end flows with Ollama and a local Kubernetes cluster, including cancellation, unknown tool names, one and multiple tools per round, timeout behavior, and tool errors.
+4. After the reliability work is covered, expand the available read-only tools through the command registry.
 
 ## Local safety notes
 

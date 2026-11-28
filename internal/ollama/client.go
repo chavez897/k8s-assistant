@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 )
 
 const ollamaBaseURL = "http://localhost:11434"
@@ -15,6 +16,10 @@ const ollamaChatEndpoint = "/api/chat"
 
 const systemPrompt = `Answer questions about Kubernetes. For current pod information, use the provided tool.
 Do not guess if the tool does not provide enough data.`
+
+var httpClient = &http.Client{
+	Timeout: 2 * time.Minute,
+}
 
 func SendChatRequest(ctx context.Context, request OllamaRequest) (OllamaResponse, error) {
 	requestBody, err := json.Marshal(request)
@@ -27,7 +32,7 @@ func SendChatRequest(ctx context.Context, request OllamaRequest) (OllamaResponse
 		return OllamaResponse{}, fmt.Errorf("could not create request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return OllamaResponse{}, fmt.Errorf("could not send request: %w", err)
 	}

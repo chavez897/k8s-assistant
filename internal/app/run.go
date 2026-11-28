@@ -15,6 +15,7 @@ import (
 )
 
 const maxConcurrentToolCalls = 4
+const maxToolLoopIterations = 10
 
 func Run() error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
@@ -51,7 +52,11 @@ func agentLoop(ctx context.Context, k8sNamespace string, request ollama.OllamaRe
 		}
 	}
 
+	loopCount := 0
 	for len(response.Message.ToolCalls) > 0 {
+		if loopCount >= maxToolLoopIterations {
+			return ollama.OllamaResponse{}, fmt.Errorf("maximum tool loop iterations reached")
+		}
 		toolCalls := response.Message.ToolCalls
 		request.Messages = append(request.Messages, response.Message)
 		toolMessages, err := executeToolCalls(ctx, k8sClient, k8sNamespace, toolCalls)
@@ -65,6 +70,7 @@ func agentLoop(ctx context.Context, k8sNamespace string, request ollama.OllamaRe
 		if err != nil {
 			return ollama.OllamaResponse{}, fmt.Errorf("could not send Ollama request after tool call: %w", err)
 		}
+		loopCount++
 	}
 	return response, nil
 }

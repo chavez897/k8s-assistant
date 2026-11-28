@@ -52,7 +52,7 @@ Tool definitions and dispatch are built from an ordered command registry. To add
 
 ## Current limitations
 
-- Ollama requests are cancellable but do not yet have an explicit timeout.
+- Ollama requests are cancellable and have a two-minute timeout per request.
 - The tool-call conversation loop has no maximum-round limit.
 - Deployment summaries currently include match-label selectors only; selector expressions and deployment conditions are not populated.
 - The test suite needs focused unit tests for input validation, Kubernetes summaries, command dispatch, serialization, and cancellation/concurrency behavior.
